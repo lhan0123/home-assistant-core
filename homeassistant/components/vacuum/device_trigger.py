@@ -18,7 +18,7 @@ from homeassistant.helpers import config_validation as cv, entity_registry as er
 from homeassistant.helpers.trigger import TriggerActionType, TriggerInfo
 from homeassistant.helpers.typing import ConfigType
 
-from . import DOMAIN, STATE_CLEANING, STATE_DOCKED
+from . import DOMAIN, STATE_CLEANING, STATE_DOCKED, VacuumEntity as vacuum
 
 TRIGGER_TYPES = {"cleaning", "docked"}
 
@@ -100,10 +100,7 @@ async def async_attach_trigger_from_prev_action(
     trigger_info: TriggerInfo,
 ) -> CALLBACK_TYPE:
     """Listen for state changes based on previous action configuration."""
-    if config[CONF_TYPE] == "clean":
-        to_state = "cleaning"
-    else:
-        to_state = "docked"
+    to_state = await vacuum.async_get_action_completed_state(config[CONF_TYPE])
     trigger_config = {
         CONF_ENTITY_ID: config[CONF_ENTITY_ID],
         CONF_TYPE: to_state,
