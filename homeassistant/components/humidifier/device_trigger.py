@@ -174,6 +174,15 @@ async def async_get_trigger_capabilities(
     return await toggle_entity.async_get_trigger_capabilities(hass, config)
 
 
+async def async_get_action_completed_state(action: str) -> str | None:
+    """Return expected state when action is complete."""
+    if action == SERVICE_SET_HUMIDITY:
+        to_state = "current_humidity_changed"
+    else:
+        to_state = None
+    return to_state
+
+
 async def async_attach_trigger_from_prev_action(
     hass: HomeAssistant,
     config: ConfigType,
@@ -181,10 +190,7 @@ async def async_attach_trigger_from_prev_action(
     trigger_info: TriggerInfo,
 ) -> CALLBACK_TYPE:
     """Listen for state changes based on previous action configuration."""
-    if config[CONF_TYPE] == SERVICE_SET_HUMIDITY:
-        to_state = "current_humidity_changed"
-    else:
-        to_state = None
+    to_state = await async_get_action_completed_state(config[CONF_TYPE])
     trigger_config = {
         CONF_ENTITY_ID: config[CONF_ENTITY_ID],
         CONF_TYPE: to_state,

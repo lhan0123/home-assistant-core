@@ -115,6 +115,15 @@ async def async_attach_trigger(
     )
 
 
+async def async_get_action_completed_state(action: str) -> str | None:
+    """Return expected state when action is complete."""
+    if action == "send_command":
+        to_state = CONF_TYPE_COMMAND
+    else:
+        to_state = CONF_TYPE_STATUS
+    return to_state
+
+
 async def async_attach_trigger_from_prev_action(
     hass: HomeAssistant,
     config: ConfigType,
@@ -122,10 +131,7 @@ async def async_attach_trigger_from_prev_action(
     trigger_info: TriggerInfo,
 ) -> CALLBACK_TYPE:
     """Listen for state changes based on previous action configuration."""
-    if config[CONF_TYPE] == "send_command":
-        to_state = CONF_TYPE_COMMAND
-    else:
-        to_state = CONF_TYPE_STATUS
+    to_state = await async_get_action_completed_state(config[CONF_TYPE])
     trigger_config = {
         CONF_ENTITY_ID: config[CONF_ENTITY_ID],
         CONF_TYPE: to_state,

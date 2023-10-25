@@ -276,6 +276,11 @@ async def async_attach_trigger(
     return listener.async_detach
 
 
+async def async_get_action_completed_state(config: ConfigType) -> str | None:
+    """Return expected state when action is complete."""
+    return None
+
+
 async def async_attach_trigger_from_prev_action(
     hass: HomeAssistant,
     config: ConfigType,

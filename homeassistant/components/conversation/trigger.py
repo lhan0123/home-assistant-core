@@ -89,6 +89,11 @@ async def async_attach_trigger(
     return default_agent.register_trigger(sentences, call_action)
 
 
+async def async_get_action_completed_state(action: str) -> str | None:
+    """Return expected state when action is complete."""
+    return None
+
+
 async def async_attach_trigger_from_prev_action(
     hass: HomeAssistant,
     config: ConfigType,
