@@ -196,6 +196,25 @@ async def async_attach_trigger(
     )
 
 
+async def async_get_action_completed_state(action: str) -> str | None:
+    """Return expected state when action is complete."""
+    if action == "open":
+        to_state = "opened"
+    elif action == "close":
+        to_state = "closed"
+    elif action == "open_tilt":
+        to_state = "tilt_position"
+    elif action == "close_tilt":
+        to_state = "tilt_position"
+    elif action == "set_position":
+        to_state = "position"
+    elif action == "set_tilt_position":
+        to_state = "tilt_position"
+    else:
+        to_state = None
+    return to_state
+
+
 async def async_attach_trigger_from_prev_action(
     hass: HomeAssistant,
     config: ConfigType,

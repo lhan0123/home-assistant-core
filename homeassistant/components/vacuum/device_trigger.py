@@ -93,6 +93,15 @@ async def async_attach_trigger(
     )
 
 
+async def async_get_action_completed_state(action: str) -> str | None:
+    """Return expected state when action is complete."""
+    if action == "clean":
+        to_state = "cleaning"
+    else:
+        to_state = "docked"
+    return to_state
+
+
 async def async_attach_trigger_from_prev_action(
     hass: HomeAssistant,
     config: ConfigType,

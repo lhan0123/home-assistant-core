@@ -27,6 +27,7 @@ from homeassistant.helpers.trigger import TriggerActionType, TriggerInfo
 from homeassistant.helpers.typing import ConfigType
 
 from . import ATTR_CURRENT_HUMIDITY, DOMAIN, HumidifierEntity as humidifier
+from .const import SERVICE_SET_HUMIDITY
 
 # mypy: disallow-any-generics
 
@@ -171,6 +172,15 @@ async def async_get_trigger_capabilities(
             )
         }
     return await toggle_entity.async_get_trigger_capabilities(hass, config)
+
+
+async def async_get_action_completed_state(action: str) -> str | None:
+    """Return expected state when action is complete."""
+    if action == SERVICE_SET_HUMIDITY:
+        to_state = "current_humidity_changed"
+    else:
+        to_state = None
+    return to_state
 
 
 async def async_attach_trigger_from_prev_action(

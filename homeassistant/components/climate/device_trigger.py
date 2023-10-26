@@ -162,6 +162,15 @@ async def async_attach_trigger(
     )
 
 
+async def async_get_action_completed_state(action: str) -> str | None:
+    """Return expected state when action is complete."""
+    if action == const.SERVICE_SET_HVAC_MODE:
+        to_state = "hvac_mode_changed"
+    else:
+        to_state = None
+    return to_state
+
+
 async def async_attach_trigger_from_prev_action(
     hass: HomeAssistant,
     config: ConfigType,

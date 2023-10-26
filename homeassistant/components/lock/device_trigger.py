@@ -105,6 +105,15 @@ async def async_attach_trigger(
     )
 
 
+async def async_get_action_completed_state(action: str) -> str | None:
+    """Return expected state when action is complete."""
+    if action == "lock":
+        to_state = STATE_LOCKED
+    else:
+        to_state = STATE_UNLOCKED
+    return to_state
+
+
 async def async_attach_trigger_from_prev_action(
     hass: HomeAssistant,
     config: ConfigType,

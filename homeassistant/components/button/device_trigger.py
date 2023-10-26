@@ -21,7 +21,7 @@ from homeassistant.helpers.trigger import TriggerActionType, TriggerInfo
 from homeassistant.helpers.typing import ConfigType
 
 from . import ButtonEntity as button
-from .const import DOMAIN
+from .const import DOMAIN, SERVICE_PRESS
 
 TRIGGER_TYPES = {"pressed"}
 
@@ -67,6 +67,15 @@ async def async_attach_trigger(
     return await async_attach_state_trigger(
         hass, state_config, action, trigger_info, platform_type="device"
     )
+
+
+async def async_get_action_completed_state(action: str) -> str | None:
+    """Return expected state when action is complete."""
+    if action == SERVICE_PRESS:
+        to_state = "pressed"
+    else:
+        to_state = None
+    return to_state
 
 
 async def async_attach_trigger_from_prev_action(
