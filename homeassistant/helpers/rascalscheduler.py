@@ -1,28 +1,33 @@
 """Helpers to execute rasc entities."""
 from __future__ import annotations
 
-from collections.abc import Iterator, MutableMapping, MutableSequence, Sequence
-from datetime import datetime
-import random
-import string
-from time import time
+from collections.abc import Iterator, MutableMapping, MutableSequence
 from typing import Any, TypeVar
 
+from homeassistant.components.device_automation import action as device_action
 from homeassistant.core import Context, HomeAssistant
 
-from .template import utcnow
+from . import config_validation as cv
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
-T = TypeVar("T")
 
+
+DOMAIN = "rascalscheduler"
 CONFIG_ACTION_ID = "action_id"
+CONFIG_ENTITY_ID = "entity_id"
+CONFIG_ACTION_ENTITY = "action_entity"
 
 
-def generate_random_id(n: int) -> str:
-    """Generate random id."""
-    res = "".join(random.choices(string.ascii_lowercase + string.digits, k=n))
-    return res
+SCHEDULED_STATE = "scheduled"
+READY_STATE = "ready"
+ACTIVE_STATE = "active"
+COMPLETED_STATE = "completed"
+
+
+RASC_START = "start"
+RASC_COMPLETE = "complete"
+RASC_RESPONSE = "rasc_response"
 
 
 class RoutineEntity:
@@ -30,101 +35,63 @@ class RoutineEntity:
 
     def __init__(
         self,
-        hass: HomeAssistant,
         routine_id: str,
-        action_script: Sequence[dict[str, Any]],
-        variables: dict[str, Any] | None,
-        context: Context | None,
-        trigger_time: datetime | None = None,
+        actions: dict[str, ActionEntity],
     ) -> None:
         """Initialize a routine entity."""
         self.routine_id = routine_id
-        self._hass = hass
-
-        # for _step, _action in enumerate(action_script):
-        #     _action[CONFIG_ACTION_ID] = routine_id + str(_step)
-
-        self.action_script = action_script
-        self.variables = variables
-        self.context = context
-
-        if trigger_time is None:
-            self._trigger_time = utcnow(self._hass)
-        else:
-            self._trigger_time = trigger_time
-
-    @property
-    def get_start_time(self) -> datetime:
-        """Get start time."""
-        return self._trigger_time
-
-
-class SubRoutineEntity:
-    """A class that describes subroutine entities for Rascal Scheduler."""
-
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        subroutine_id: str | None,
-        subroutine: list[ActionEntity],
-        routine: RoutineEntity,
-        start_time: float | None = None,
-    ) -> None:
-        """Initialize a subroutine entity."""
-        self._hass = hass
-
-        if subroutine_id is None:
-            self.subroutine_id = (
-                routine.routine_id + "-" + generate_random_id(len(routine.routine_id))
-            )
-            for _no, _entity in enumerate(subroutine):
-                _entity.action[CONFIG_ACTION_ID] = self.subroutine_id + "-" + str(_no)
-        else:
-            self.subroutine_id = subroutine_id
-
-        self.subroutine = subroutine
-        self.routine = routine
-
-        if start_time is None:
-            self._start_time = time()
-        else:
-            self._start_time = start_time
-
-    @property
-    def get_start_time(self) -> float:
-        """Get start time."""
-        return self._start_time
+        self.actions = actions
 
 
 class ActionEntity:
-    """A class that describes action entities for Rascal Scheduler."""
+    """Initialize a routine entity."""
 
     def __init__(
         self,
         hass: HomeAssistant,
-        action_id: str | None,
         action: dict[str, Any],
-        routine: RoutineEntity,
-        start_time: float | None,
+        action_id: str,
+        action_state: str | None,
+        routine_id: str,
+        variables: dict[str, Any],
+        context: Context | None,
     ) -> None:
-        """Initialize an action entity."""
+        """Initialize a routine entity."""
         self._hass = hass
-
-        if action_id is not None:
-            self.action_id = action_id
-
         self.action = action
-        self.routine = routine
+        self.action_id = action_id
 
-        if start_time is None:
-            self._start_time = time()
+        if action_state is None:
+            self.action_state = SCHEDULED_STATE
         else:
-            self._start_time = start_time
+            self.action_state = action_state
 
-    @property
-    def get_start_time(self) -> float:
-        """Get start time."""
-        return self._start_time
+        self.parent: list[str] = []
+        self.children: list[str] = []
+        self.routine_id = routine_id
+        self.variables = variables
+        self.context = context
+
+    async def attach_triggered(self) -> None:
+        """Trigger the function."""
+        # print("[rascal] attach_triggered")
+        action = cv.determine_script_action(self.action)
+
+        try:
+            handler = f"_async_{action}_step"
+            await getattr(self, handler)()
+
+            # self.hass.bus.async_fire(EVENT_ACTION_COMPLETED, {CONFIG_ACTION_ENTITY: self})
+        except Exception:  # pylint: disable=broad-except
+            return
+            # print(ex)
+
+    async def _async_device_step(self) -> None:
+        """Execute device automation."""
+        # print("device automation")
+        await device_action.async_call_action_from_config(
+            self._hass, self.action, self.variables, self.context
+        )
 
 
 class Queue(MutableMapping[_KT, _VT]):
